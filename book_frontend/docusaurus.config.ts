@@ -5,7 +5,7 @@ import type * as Preset from '@docusaurus/preset-classic';
 // This runs in Node.js - Don't use client-side code here (browser APIs, JSX...)
 
 const config: Config = {
-  title: 'My Site',
+  title: 'Physical AI & Humanoid Robotics',
   tagline: 'Dinosaurs are cool',
   favicon: 'img/favicon.ico',
 
@@ -60,7 +60,7 @@ const config: Config = {
       respectPrefersColorScheme: true,
     },
     navbar: {
-      title: 'My Site',
+      title: 'Physical AI & Humanoid Robotics',
       logo: {
         alt: 'My Site Logo',
         src: 'img/logo.svg',
@@ -70,7 +70,7 @@ const config: Config = {
           type: 'docSidebar',
           sidebarId: 'tutorialSidebar',
           position: 'left',
-          label: 'Tutorial',
+          label: 'Book',
         },
         {
           href: 'https://github.com/facebook/docusaurus',
@@ -83,42 +83,66 @@ const config: Config = {
       style: 'dark',
       links: [
         {
-          title: 'Docs',
+          title: 'Book Sections',
           items: [
             {
-              label: 'Tutorial',
-              to: '/docs/intro',
+              label: 'Preface',
+              to: '/docs/preface',
+            },
+            {
+              label: 'Module 1: ROS 2',
+              to: '/docs/modules/ros2/chapter-1-physical-ai',
+            },
+            {
+              label: 'Module 2: Digital Twin',
+              to: '/docs/modules/digital-twin/chapter-1-introduction',
+            },
+            {
+              label: 'Module 3: AI-Robot Brain',
+              to: '/docs/modules/isaac/chapter-1-ai-brain',
+            },
+            {
+              label: 'Module 4: Vision-Language-Action',
+              to: '/docs/modules/vla/chapter-1-overview',
             },
           ],
         },
         {
-          title: 'Community',
+          title: 'Technology Resources',
           items: [
             {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/docusaurus',
+              label: 'ROS 2 Documentation',
+              href: 'https://docs.ros.org/',
             },
             {
-              label: 'Discord',
-              href: 'https://discordapp.com/invite/docusaurus',
+              label: 'NVIDIA Isaac',
+              href: 'https://developer.nvidia.com/isaac',
             },
             {
-              label: 'X',
-              href: 'https://x.com/docusaurus',
+              label: 'Gazebo Simulation',
+              href: 'https://gazebosim.org/',
             },
           ],
         },
         {
-          title: 'More',
+          title: 'Project Links',
           items: [
             {
               label: 'GitHub',
-              href: 'https://github.com/facebook/docusaurus',
+              href: 'https://github.com/S-Farhan05',
+            },
+            {
+              label: 'LinkedIn',
+              href: 'https://www.linkedin.com/in/syed-farhan-iqbal-b9b15a2b1',
+            },
+            {
+              label: 'Unity 3D',
+              href: 'https://unity.com/',
             },
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} My Project, Inc. Built with Docusaurus.`,
+      copyright: `Copyright © 2025 Physical AI & Humanoid Robotics. All rights reserved.`,
     },
     prism: {
       theme: prismThemes.github,

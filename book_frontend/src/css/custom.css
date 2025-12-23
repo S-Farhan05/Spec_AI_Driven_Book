@@ -28,3 +28,13 @@
   --ifm-color-primary-lightest: #4fddbf;
   --docusaurus-highlighted-code-line-bg: rgba(0, 0, 0, 0.3);
 }
+
+/* Add spacing above footer copyright */
+.footer {
+  --ifm-footer-padding-vertical: 3rem;
+}
+
+.footer__copyright {
+  margin-top: 2rem;
+  text-align: center;
+}
