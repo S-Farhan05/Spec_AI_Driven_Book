@@ -1,0 +1,108 @@
+# API Contracts: Digital Twin Module
+
+## Content Management API
+
+### Get Chapter Content
+```
+GET /api/content/digital-twin/{chapterId}
+```
+
+**Description**: Retrieve content for a specific chapter in the Digital Twin module
+
+**Path Parameters**:
+- chapterId: string (valid chapter identifiers: "chapter-1-introduction", "chapter-2-gazebo-physics", "chapter-3-gazebo-environment", "chapter-4-unity-rendering", "chapter-5-sensor-simulation", "chapter-6-integration-workflows", "practice-section")
+
+**Response**:
+```
+{
+  "id": "chapter-1-introduction",
+  "title": "Introduction to Digital Twins",
+  "content": "# Chapter 1: Introduction to Digital Twins\n\nContent here...",
+  "learningObjectives": ["Understand digital twin concepts", "Identify use cases"],
+  "duration": 30,
+  "resources": [
+    {
+      "id": "resource-1",
+      "title": "Digital Twin Overview Paper",
+      "url": "https://example.com/paper",
+      "citation": "Author, A. (2023). Digital Twin Concepts. Journal of Robotics."
+    }
+  ]
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+**Error Responses**:
+- 404 Not Found: Chapter does not exist
+- 500 Internal Server Error: Server error
+
+### Search Content
+```
+GET /api/search?q={query}&module=digital-twin
+```
+
+**Description**: Search for content within the Digital Twin module
+
+**Query Parameters**:
+- q: string (search query)
+- module: string (must be "digital-twin")
+
+**Response**:
+```
+{
+  "results": [
+    {
+      "id": "chapter-2-gazebo-physics",
+      "title": "Gazebo Physics Simulation",
+      "snippet": "Content snippet here...",
+      "relevance": 0.95,
+      "url": "/docs/modules/digital-twin/chapter-2-gazebo-physics"
+    }
+  ],
+  "totalResults": 1,
+  "query": "physics simulation"
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+## Content Validation API
+
+### Validate Chapter Content
+```
+POST /api/validate/chapter
+```
+
+**Description**: Validate chapter content against requirements
+
+**Request Body**:
+```
+{
+  "content": "# Chapter content here...",
+  "citations": ["Author, A. (2023). Title. Journal."],
+  "learningObjectives": ["Objective 1", "Objective 2"]
+}
+```
+
+**Response**:
+```
+{
+  "isValid": true,
+  "issues": [],
+  "suggestions": []
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+**Validation Rules**:
+- All citations must follow APA format
+- Content must be in Docusaurus-compatible Markdown
+- Minimum 40% peer-reviewed sources

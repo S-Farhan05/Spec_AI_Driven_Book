@@ -1,0 +1,229 @@
+# API Contracts: VLA Module
+
+## Vision-Language-Action API
+
+### Process Voice Command
+```
+POST /api/vla/process-voice
+```
+
+**Description**: Process voice command and translate to action plan
+
+**Request Body**:
+```
+{
+  "audio_data": "base64_encoded_audio",
+  "robot_id": "string",
+  "command_type": "navigation|manipulation|inspection",
+  "context": {
+    "environment": "indoor|outdoor|warehouse",
+    "robot_capabilities": ["navigation", "manipulation", "vision"]
+  }
+}
+```
+
+**Response**:
+```
+{
+  "command_id": "uuid",
+  "processed_text": "natural language command converted to text",
+  "intent_classification": {
+    "category": "navigation|manipulation|query|control",
+    "confidence": 0.95
+  },
+  "action_plan": {
+    "steps": [
+      {
+        "action_type": "move_to|pick_up|place|inspect",
+        "parameters": {},
+        "estimated_duration": 30
+      }
+    ],
+    "success_criteria": ["reach_destination", "object_grasped"]
+  },
+  "execution_status": "planned|executing|completed|failed"
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+**Error Responses**:
+- 400 Bad Request: Invalid audio format or missing parameters
+- 404 Not Found: Robot not found
+- 500 Internal Server Error: Processing error
+
+### Get Perception Data
+```
+GET /api/vla/perception/{robot_id}
+```
+
+**Description**: Retrieve current perception data from robot sensors
+
+**Path Parameters**:
+- robot_id: string (robot identifier)
+
+**Query Parameters**:
+- sensors: string (comma-separated list of sensor types to include: "lidar,camera,imu")
+- format: string (data format: "raw|processed|features")
+
+**Response**:
+```
+{
+  "timestamp": "ISO8601",
+  "robot_id": "string",
+  "environment_map": {
+    "type": "occupancy_grid|point_cloud|mesh",
+    "data": "binary_or_compressed_data",
+    "resolution": 0.05
+  },
+  "objects_detected": [
+    {
+      "id": "object_id",
+      "class": "object_class",
+      "bbox": {"x": 0, "y": 0, "z": 0, "width": 0, "height": 0, "depth": 0},
+      "confidence": 0.95,
+      "position": {"x": 0, "y": 0, "z": 0}
+    }
+  ],
+  "semantic_annotations": [
+    {
+      "region_id": "region_id",
+      "label": "room_type|object_class|surface_type",
+      "confidence": 0.9
+    }
+  ]
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+### Execute Action Plan
+```
+POST /api/vla/execute-plan
+```
+
+**Description**: Execute a structured action plan on the robot
+
+**Request Body**:
+```
+{
+  "robot_id": "string",
+  "plan_id": "uuid",
+  "action_steps": [
+    {
+      "action_type": "move_to|pick_up|place|inspect|navigate",
+      "parameters": {
+        "target_pose": {
+          "position": {"x": 0, "y": 0, "z": 0},
+          "orientation": {"x": 0, "y": 0, "z": 0, "w": 1}
+        },
+        "object_id": "optional_object_identifier",
+        "gripper_position": "open|closed|value_0_to_1"
+      },
+      "constraints": {
+        "max_execution_time": 60,
+        "safety_thresholds": {
+          "min_distance_to_obstacles": 0.5,
+          "max_force": 10.0
+        }
+      }
+    }
+  ],
+  "monitoring_options": {
+    "enable_feedback": true,
+    "report_frequency": 1.0,
+    "failure_conditions": ["collision", "timeout", "force_limit_exceeded"]
+  }
+}
+```
+
+**Response**:
+```
+{
+  "execution_id": "uuid",
+  "status": "accepted|rejected|executing|completed|failed",
+  "estimated_completion_time": 120,
+  "feedback_stream": "websocket_endpoint_for_realtime_feedback"
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+## VLA Pipeline Management API
+
+### Create VLA Pipeline
+```
+POST /api/vla/pipeline
+```
+
+**Description**: Create a new Vision-Language-Action pipeline configuration
+
+**Request Body**:
+```
+{
+  "name": "pipeline_name",
+  "description": "pipeline_description",
+  "components": {
+    "voice_processor": {
+      "model": "whisper-tiny|whisper-base|whisper-small",
+      "language": "en|es|fr|de|etc",
+      "sampling_rate": 16000
+    },
+    "language_understanding": {
+      "model": "llm_model_identifier",
+      "temperature": 0.3,
+      "max_tokens": 512
+    },
+    "planning_module": {
+      "algorithm": "rrt|prm|a_star|dwa",
+      "optimization_criteria": ["path_length", "safety", "energy_efficiency"]
+    },
+    "execution_module": {
+      "middleware": "ros2|custom",
+      "action_servers": ["navigation", "manipulation", "perception"]
+    }
+  },
+  "configuration": {
+    "real_time_factor": 1.0,
+    "safety_factors": {
+      "collision_buffer": 0.3,
+      "motion_limits": {"linear_vel": 0.5, "angular_vel": 1.0}
+    }
+  }
+}
+```
+
+**Response**:
+```
+{
+  "pipeline_id": "uuid",
+  "name": "pipeline_name",
+  "status": "created|active|inactive",
+  "created_at": "ISO8601",
+  "updated_at": "ISO8601"
+}
+```
+
+**Success Response**:
+- Status: 201 Created
+- Content-Type: application/json
+
+### Update Pipeline Configuration
+```
+PUT /api/vla/pipeline/{pipeline_id}
+```
+
+**Description**: Update an existing VLA pipeline configuration
+
+**Path Parameters**:
+- pipeline_id: string (pipeline identifier)
+
+**Request Body**: Same as POST /api/vla/pipeline but with optional fields
+
+**Response**: Same as creation response but with status 200 OK

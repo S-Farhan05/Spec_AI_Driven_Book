@@ -1,0 +1,108 @@
+# API Contracts: Isaac Module
+
+## Content Management API
+
+### Get Chapter Content
+```
+GET /api/content/isaac/{chapterId}
+```
+
+**Description**: Retrieve content for a specific chapter in the Isaac module
+
+**Path Parameters**:
+- chapterId: string (valid chapter identifiers: "chapter-1-ai-brain", "chapter-2-isaac-ecosystem", "chapter-3-simulation-synthetic-data", "chapter-4-visual-slam", "chapter-5-navigation-nav2", "chapter-6-perception-action", "practice-section")
+
+**Response**:
+```
+{
+  "id": "chapter-1-ai-brain",
+  "title": "The AI-Robot Brain",
+  "content": "# Chapter 1: The AI-Robot Brain\n\nContent here...",
+  "learningObjectives": ["Understand AI-robot brain concepts", "Identify perception roles"],
+  "duration": 30,
+  "resources": [
+    {
+      "id": "resource-1",
+      "title": "Isaac Perception Paper",
+      "url": "https://example.com/paper",
+      "citation": "Author, A. (2023). Isaac Perception. Journal of AI Robotics."
+    }
+  ]
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+**Error Responses**:
+- 404 Not Found: Chapter does not exist
+- 500 Internal Server Error: Server error
+
+### Search Content
+```
+GET /api/search?q={query}&module=isaac
+```
+
+**Description**: Search for content within the Isaac module
+
+**Query Parameters**:
+- q: string (search query)
+- module: string (must be "isaac")
+
+**Response**:
+```
+{
+  "results": [
+    {
+      "id": "chapter-2-isaac-ecosystem",
+      "title": "NVIDIA Isaac Ecosystem",
+      "snippet": "Content snippet here...",
+      "relevance": 0.95,
+      "url": "/docs/modules/isaac/chapter-2-isaac-ecosystem"
+    }
+  ],
+  "totalResults": 1,
+  "query": "perception pipeline"
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+## Content Validation API
+
+### Validate Chapter Content
+```
+POST /api/validate/chapter
+```
+
+**Description**: Validate chapter content against requirements
+
+**Request Body**:
+```
+{
+  "content": "# Chapter content here...",
+  "citations": ["Author, A. (2023). Title. Journal."],
+  "learningObjectives": ["Objective 1", "Objective 2"]
+}
+```
+
+**Response**:
+```
+{
+  "isValid": true,
+  "issues": [],
+  "suggestions": []
+}
+```
+
+**Success Response**:
+- Status: 200 OK
+- Content-Type: application/json
+
+**Validation Rules**:
+- All citations must follow APA format
+- Content must be in Docusaurus-compatible Markdown
+- Minimum 40% peer-reviewed sources
