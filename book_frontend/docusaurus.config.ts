@@ -15,7 +15,7 @@ const config: Config = {
   },
 
   // Set the production url of your site here
-  url: 'https://your-docusaurus-site.example.com',
+  url: 'https://spec-ai-driven-book.vercel.app/',
   // Set the /<baseUrl>/ pathname under which your site is served
   // For GitHub pages deployment, it is often '/<projectName>/'
   baseUrl: '/',
@@ -73,7 +73,7 @@ const config: Config = {
           label: 'Book',
         },
         {
-          href: 'https://github.com/facebook/docusaurus',
+          href: 'https://github.com/S-Farhan05/Spec_AI_Driven_Book',
           label: 'GitHub',
           position: 'right',
         },
