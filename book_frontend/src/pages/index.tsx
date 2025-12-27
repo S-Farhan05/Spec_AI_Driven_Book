@@ -7,6 +7,7 @@ import Heading from '@theme/Heading';
 
 import styles from './index.module.css';
 
+
 // Module data
 const modules = [
   {
@@ -99,6 +100,7 @@ export default function Home(): ReactNode {
         </section>
 
       </div>
+      
     </Layout>
   );
 }

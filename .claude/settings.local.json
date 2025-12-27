@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx docusaurus start --port 3005)"
+    ]
+  }
+}

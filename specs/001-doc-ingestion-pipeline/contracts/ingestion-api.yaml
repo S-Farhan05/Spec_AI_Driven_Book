@@ -1,0 +1,142 @@
+openapi: 3.0.0
+info:
+  title: Documentation Ingestion API
+  description: API for ingesting Docusaurus documentation into vector storage
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  /ingest:
+    post:
+      summary: Start documentation ingestion process
+      description: Initiates the process of crawling a Docusaurus site, chunking content, generating embeddings, and storing in Qdrant
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IngestionRequest'
+      responses:
+        '202':
+          description: Ingestion process started successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionResponse'
+        '400':
+          description: Invalid request parameters
+        '500':
+          description: Internal server error during ingestion
+      x-implementation-status: planned
+
+  /ingest/status/{job_id}:
+    get:
+      summary: Get ingestion job status
+      description: Retrieve the current status of a documentation ingestion job
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Unique identifier for the ingestion job
+      responses:
+        '200':
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IngestionStatus'
+        '404':
+          description: Job not found
+      x-implementation-status: planned
+
+components:
+  schemas:
+    IngestionRequest:
+      type: object
+      required:
+        - url
+      properties:
+        url:
+          type: string
+          format: uri
+          description: Base URL of the Docusaurus documentation site to ingest
+          example: "https://robotics-docs.example.com"
+        collection_name:
+          type: string
+          description: Name of the Qdrant collection to store embeddings in
+          default: "docs_embeddings"
+        chunk_size:
+          type: integer
+          description: Target size for text chunks in tokens
+          default: 500
+          minimum: 100
+          maximum: 2000
+        max_depth:
+          type: integer
+          description: Maximum depth to crawl from base URL
+          default: 3
+          minimum: 1
+          maximum: 10
+        delay_between_requests:
+          type: number
+          description: Delay between HTTP requests in seconds
+          default: 1
+          minimum: 0
+
+    IngestionResponse:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: Unique identifier for the ingestion job
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current status of the ingestion job
+        message:
+          type: string
+          description: Human-readable status message
+        started_at:
+          type: string
+          format: date-time
+          description: Timestamp when the job was started
+
+    IngestionStatus:
+      type: object
+      properties:
+        job_id:
+          type: string
+          description: Unique identifier for the ingestion job
+        status:
+          type: string
+          enum: [pending, processing, completed, failed]
+          description: Current status of the ingestion job
+        progress:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Progress of the job as a percentage (0.0 to 1.0)
+        pages_processed:
+          type: integer
+          description: Number of documentation pages processed so far
+        chunks_created:
+          type: integer
+          description: Number of text chunks created
+        embeddings_generated:
+          type: integer
+          description: Number of embeddings successfully generated
+        records_stored:
+          type: integer
+          description: Number of records successfully stored in Qdrant
+        error_message:
+          type: string
+          description: Error message if the job failed
+        completed_at:
+          type: string
+          format: date-time
+          description: Timestamp when the job was completed (if completed)

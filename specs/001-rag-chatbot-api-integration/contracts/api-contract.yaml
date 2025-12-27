@@ -1,0 +1,130 @@
+# OpenAPI Specification: RAG Chatbot API
+
+```yaml
+openapi: 3.0.3
+info:
+  title: RAG Chatbot API
+  description: API for interacting with the RAG chatbot system that provides responses grounded in book content
+  version: 1.0.0
+servers:
+  - url: http://localhost:8000
+    description: Local development server
+
+paths:
+  /chat:
+    post:
+      summary: Send a query to the RAG chatbot
+      description: Submits a user query to the RAG agent and returns a content-grounded response
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required:
+                - message
+              properties:
+                message:
+                  type: string
+                  description: The user's query message
+                  example: "What are the key principles of humanoid robotics?"
+                session_id:
+                  type: string
+                  description: Optional session identifier for conversation continuity
+                  example: "sess_12345"
+      responses:
+        '200':
+          description: Successful response from the RAG agent
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - data
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    required:
+                      - response
+                      - sources
+                      - timestamp
+                    properties:
+                      response:
+                        type: string
+                        description: The AI-generated response
+                        example: "The key principles of humanoid robotics include..."
+                      sources:
+                        type: array
+                        items:
+                          type: string
+                        description: References to book content used in the response
+                        example: ["chapter_3.md", "section_5.2.md"]
+                      timestamp:
+                        type: string
+                        format: date-time
+                        description: When the response was generated
+                        example: "2025-12-27T10:00:00Z"
+                      grounding_confidence:
+                        type: number
+                        format: float
+                        minimum: 0
+                        maximum: 1
+                        description: Confidence level in content grounding
+                        example: 0.85
+        '400':
+          description: Bad request - invalid query format
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    description: Error message explaining the issue
+                    example: "Query message is required and cannot be empty"
+        '500':
+          description: Internal server error
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - success
+                  - error
+                properties:
+                  success:
+                    type: boolean
+                    example: false
+                  error:
+                    type: string
+                    description: Error message
+                    example: "An internal error occurred while processing the query"
+
+  /health:
+    get:
+      summary: Check API health status
+      description: Returns the health status of the API service
+      responses:
+        '200':
+          description: API is healthy and operational
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - status
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+```

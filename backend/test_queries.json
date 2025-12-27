@@ -1,0 +1,42 @@
+[
+  {
+    "test_id": "test_digital_twin_simulation",
+    "query": "What is digital twin simulation?",
+    "expected_keywords": ["digital twin", "simulation", "modeling", "virtual", "representation"],
+    "expected_module": "digital-twin",
+    "min_relevance_threshold": 0.6,
+    "test_category": "technical"
+  },
+  {
+    "test_id": "test_ros2_navigation",
+    "query": "How does ROS2 navigation work?",
+    "expected_keywords": ["ROS2", "navigation", "path planning", "mapping", "localization"],
+    "expected_module": "ros2",
+    "min_relevance_threshold": 0.6,
+    "test_category": "technical"
+  },
+  {
+    "test_id": "test_isaac_components",
+    "query": "Explain Isaac ecosystem components",
+    "expected_keywords": ["Isaac", "ecosystem", "components", "NVIDIA", "simulation"],
+    "expected_module": "isaac",
+    "min_relevance_threshold": 0.6,
+    "test_category": "technical"
+  },
+  {
+    "test_id": "test_vla_models",
+    "query": "What are VLA models?",
+    "expected_keywords": ["VLA", "Vision-Language-Action", "models", "multimodal"],
+    "expected_module": "vla",
+    "min_relevance_threshold": 0.6,
+    "test_category": "technical"
+  },
+  {
+    "test_id": "test_unity_rendering",
+    "query": "How to set up Unity rendering pipeline?",
+    "expected_keywords": ["Unity", "rendering", "pipeline", "graphics", "engine"],
+    "expected_module": "digital-twin",
+    "min_relevance_threshold": 0.6,
+    "test_category": "technical"
+  }
+]

@@ -1,0 +1,160 @@
+openapi: 3.0.0
+info:
+  title: RAG Retrieval Validation Interface
+  description: Interface definitions for validating RAG retrieval pipeline functionality
+  version: 1.0.0
+
+paths: {}
+
+components:
+  schemas:
+    ValidationRequest:
+      type: object
+      required:
+        - test_queries
+        - validation_rules
+      properties:
+        test_queries:
+          type: array
+          items:
+            type: string
+          description: List of sample queries to test retrieval functionality
+          example: ["What is digital twin simulation?", "How does ROS2 navigation work?"]
+        validation_rules:
+          type: object
+          properties:
+            check_metadata_integrity:
+              type: boolean
+              description: Whether to validate metadata preservation
+              default: true
+            check_semantic_relevance:
+              type: boolean
+              description: Whether to validate semantic relevance of results
+              default: true
+            min_relevance_threshold:
+              type: number
+              format: float
+              minimum: 0.0
+              maximum: 1.0
+              description: Minimum relevance score for acceptable results
+              default: 0.7
+          description: Rules for validating the retrieval results
+        collection_name:
+          type: string
+          description: Name of the Qdrant collection to validate
+          default: "docs_embeddings"
+
+    ValidationResult:
+      type: object
+      properties:
+        validation_id:
+          type: string
+          description: Unique identifier for this validation run
+        timestamp:
+          type: string
+          format: date-time
+          description: When the validation was performed
+        total_queries:
+          type: integer
+          description: Number of queries tested
+        successful_retrievals:
+          type: integer
+          description: Number of queries that returned relevant results
+        failed_retrievals:
+          type: integer
+          description: Number of queries that failed to return relevant results
+        metadata_validation_passed:
+          type: boolean
+          description: Whether all metadata was preserved correctly
+        semantic_accuracy_rate:
+          type: number
+          format: float
+          description: Percentage of results that were semantically relevant
+        avg_query_time_ms:
+          type: number
+          format: float
+          description: Average time to execute a query in milliseconds
+        total_test_time_ms:
+          type: number
+          format: float
+          description: Total time for all validation tests in milliseconds
+        error_details:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+        summary_report:
+          type: string
+          description: Human-readable summary of validation results
+
+    ValidationError:
+      type: object
+      properties:
+        query:
+          type: string
+          description: The query that caused the validation error
+        error_type:
+          type: string
+          enum: [metadata_missing, semantic_irrelevant, connection_failed, timeout, invalid_format]
+          description: Type of validation error
+        error_message:
+          type: string
+          description: Detailed error message
+        timestamp:
+          type: string
+          format: date-time
+          description: When the error occurred
+
+    QueryTest:
+      type: object
+      required:
+        - query
+        - expected_keywords
+      properties:
+        query:
+          type: string
+          description: The query to test
+          example: "What is digital twin simulation?"
+        expected_keywords:
+          type: array
+          items:
+            type: string
+          description: Keywords that should appear in relevant results
+          example: ["digital twin", "simulation", "modeling"]
+        expected_module:
+          type: string
+          description: Expected module in results
+          example: "digital-twin"
+        min_relevance_score:
+          type: number
+          format: float
+          minimum: 0.0
+          maximum: 1.0
+          description: Minimum relevance score for this specific query
+          default: 0.6
+
+    RetrievalMetrics:
+      type: object
+      properties:
+        connection_success_rate:
+          type: number
+          format: float
+          description: Percentage of successful connections to Qdrant
+        query_success_rate:
+          type: number
+          format: float
+          description: Percentage of successful query executions
+        avg_response_time:
+          type: number
+          format: float
+          description: Average response time for queries in milliseconds
+        metadata_preservation_rate:
+          type: number
+          format: float
+          description: Percentage of chunks with preserved metadata
+        semantic_relevance_rate:
+          type: number
+          format: float
+          description: Percentage of results with semantic relevance
+        total_chunks_retrieved:
+          type: integer
+          description: Total number of chunks retrieved during validation
