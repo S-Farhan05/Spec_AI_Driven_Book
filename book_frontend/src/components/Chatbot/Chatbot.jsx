@@ -8,50 +8,21 @@ const Chatbot = () => {
   const [sessionId, setSessionId] = useState(null);
   const messagesEndRef = useRef(null);
 
-  // Initialize session and messages
+  // Initialize session and messages (without localStorage persistence)
   useEffect(() => {
-    // Create or retrieve session ID
-    const storedSessionId = localStorage.getItem('chatbot-session-id');
-    if (storedSessionId) {
-      setSessionId(storedSessionId);
-    } else {
-      const newSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-      localStorage.setItem('chatbot-session-id', newSessionId);
-      setSessionId(newSessionId);
-    }
+    // Create a new session ID for each visit
+    const newSessionId = 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    setSessionId(newSessionId);
 
-    // Load previous messages if any
-    const storedMessages = localStorage.getItem('chatbot-messages');
-    if (storedMessages) {
-      try {
-        setMessages(JSON.parse(storedMessages));
-      } catch {
-        // If parsing fails, start with welcome message
-        setMessages([
-          {
-            type: 'bot',
-            content: 'Hello! I\'m your book assistant. Ask me anything about the humanoid robotics content.',
-            timestamp: new Date()
-          }
-        ]);
+    // Always start with a fresh welcome message
+    setMessages([
+      {
+        type: 'bot',
+        content: 'Hello! I\'m your book assistant. Ask me anything about the humanoid robotics content.',
+        timestamp: new Date()
       }
-    } else {
-      setMessages([
-        {
-          type: 'bot',
-          content: 'Hello! I\'m your book assistant. Ask me anything about the humanoid robotics content.',
-          timestamp: new Date()
-        }
-      ]);
-    }
+    ]);
   }, []);
-
-  // Save messages to localStorage whenever they change
-  useEffect(() => {
-    if (messages.length > 0) {
-      localStorage.setItem('chatbot-messages', JSON.stringify(messages));
-    }
-  }, [messages]);
 
   // Scroll to bottom of messages
   useEffect(() => {
@@ -112,9 +83,13 @@ const Chatbot = () => {
         let finalContent = data.data.response;
         const confidence = data.data.grounding_confidence;
 
-        // If confidence is low, add a gentle note about relevance
+        // If confidence is low, provide a more user-friendly message without technical jargon
         if (confidence !== undefined && confidence !== null && confidence < 0.5) {
-          finalContent += "\n\nNote: This response may not be fully based on the book content as no highly relevant sources were found.";
+          if (confidence < 0.2) {
+            finalContent = "I couldn't find relevant information in the humanoid robotics book to answer your question. Please make sure your question is related to the book content about digital twins, ROS2, navigation, VLA models, or other humanoid robotics topics.";
+          } else {
+            finalContent += "\n\nNote: I found some related information, but it may not fully answer your question. For better results, try asking a more specific question about the humanoid robotics book content.";
+          }
         }
 
         const botMessage = {

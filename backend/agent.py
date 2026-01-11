@@ -266,14 +266,14 @@ def generate_response_with_context(query: str, retrieved_chunks: List[RetrievedC
     Generate a response based on the query and retrieved context
     """
     try:
-        # Format context from retrieved chunks
+        # Format context from retrieved chunks (internal use only)
         context_str = "\\n\\n".join([
             f"Source: {chunk.url or 'Unknown'}\\nModule: {chunk.module or 'Unknown'}\\nSection: {chunk.section or 'Unknown'}\\nContent: {chunk.content[:500]}"
             for chunk in retrieved_chunks
         ])
 
         # Create a system prompt that emphasizes using only the provided context
-        system_prompt = "You are a helpful assistant that answers questions based only on the provided context. Do not use any external knowledge or make up information. If the answer is not available in the provided context, say so clearly."
+        system_prompt = "You are a helpful assistant that answers questions based only on the provided content from the humanoid robotics book. Do not use any external knowledge or make up information. If the answer is not available in the provided content, say so clearly and suggest the user ask about the humanoid robotics book content specifically. Do not mention technical terms like 'chunks', 'relevance', 'retrieval', 'sources', etc. to the user. Keep responses natural and user-friendly."
 
         # Create the full prompt
         full_prompt = f"{system_prompt}\\n\\nContext:\\n{context_str}\\n\\nQuestion: {query}\\n\\nAnswer:"
@@ -281,12 +281,23 @@ def generate_response_with_context(query: str, retrieved_chunks: List[RetrievedC
         # Use OpenAI to generate response (using a mock response since we can't call OpenAI directly from here)
         # In a real implementation, this would call the OpenAI API
         if len(retrieved_chunks) > 0:
-            # Create a response based on the context
-            response = f"Based on the retrieved content, here's the answer to your question about '{query[:30]}...':\\n\\nThe content discusses this topic in the following sources:\\n"
-            for i, chunk in enumerate(retrieved_chunks[:3]):  # Show top 3 sources
-                response += f"- From {chunk.module or 'Unknown'}/{chunk.section or 'Unknown'}: {chunk.content[:200]}...\\n"
+            # Check if the retrieved content is actually relevant (average relevance score > 0.3)
+            avg_relevance = sum(chunk.relevance_score for chunk in retrieved_chunks) / len(retrieved_chunks)
+
+            if avg_relevance > 0.3:
+                # Create a response based on the relevant context, without mentioning technical details
+                response = f"Here's the answer to your question about '{query[:30]}...':\\n\\n"
+                for i, chunk in enumerate(retrieved_chunks[:3]):  # Show top 3 pieces of information
+                    response += f"- {chunk.content[:200]}...\\n"
+            else:
+                # Content retrieved but not very relevant
+                response = f"I found some information related to '{query[:30]}...', but it may not fully address your specific question about humanoid robotics:\\n\\n"
+                for i, chunk in enumerate(retrieved_chunks[:2]):  # Show top 2 pieces of information
+                    response += f"- {chunk.content[:150]}...\\n\\n"
+                response += "If you have a more specific question about the humanoid robotics book content, please try rephrasing."
         else:
-            response = "I couldn't find relevant information in the provided content to answer your question."
+            # No content retrieved
+            response = f"I couldn't find any relevant information in the humanoid robotics book to answer your question about '{query}'. Please make sure your question is related to the book content about digital twins, ROS2, navigation, VLA models, or other humanoid robotics topics."
 
         logger.info(f"Generated response for query: {query[:50]}...")
         return response
@@ -328,8 +339,8 @@ def validate_url(url: str) -> bool:
 
 # Create the main RAG Agent
 rag_agent = Agent(
-    name="RAG Book Assistant",
-    instructions="You are an assistant that answers questions based on retrieved content from book documentation. Use the provided tools to retrieve relevant content from the vector database, validate its relevance, and generate accurate responses grounded in the retrieved information. Always cite sources when possible.",
+    name="Humanoid Robotics Book Assistant",
+    instructions="You are an assistant that answers questions based on content from the humanoid robotics book. Use the provided information to generate accurate responses. Do not mention technical terms like 'chunks', 'retrieval', 'database', 'tools', 'validation', 'relevance', etc. Keep responses natural and user-friendly. Focus on providing helpful answers about humanoid robotics topics.",
     tools=[retrieve_content_from_qdrant, validate_content_relevance, generate_response_with_context],
     model=Third_party_Model,
 )
