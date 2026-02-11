@@ -1,5 +1,5 @@
 """
-Validation script to check if all RAG Chatbot API Integration tasks have been completed
+Validation script to check if all RAG Chatbot API Integration tasks have been completed and chnaged validation
 """
 import os
 import sys
