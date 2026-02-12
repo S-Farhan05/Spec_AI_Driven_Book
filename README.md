@@ -68,13 +68,15 @@ uvicorn api:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ### Environment Variables
-Create a `.env` file with the following:
+
+**Backend:** See `backend/.env.example` for required variables
+
+**Frontend:** Create `book_frontend/.env`:
 ```
-OPENAI_API_KEY=your_openai_api_key
-QDRANT_URL=your_qdrant_cloud_url
-QDRANT_API_KEY=your_qdrant_api_key
-DATABASE_URL=your_neon_postgresql_url
+REACT_APP_API_URL=http://localhost:8000
 ```
+
+For production deployment, set `REACT_APP_API_URL` to your backend URL in Vercel environment variables.
 
 ## 📖 Usage
 

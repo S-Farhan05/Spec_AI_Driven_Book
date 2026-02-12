@@ -68,7 +68,7 @@ const Chatbot = () => {
 
     try {
       // Use retry logic for the API call
-      const data = await fetchWithRetry('http://localhost:8000/chat', {
+      const data = await fetchWithRetry(`${process.env.REACT_APP_API_URL || 'http://localhost:8000'}/chat`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
