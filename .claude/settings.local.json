@@ -1,7 +1,8 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx docusaurus start --port 3005)"
+      "Bash(npx docusaurus start --port 3005)",
+      "Bash(git show-ref:*)"
     ]
   }
 }

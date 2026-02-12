@@ -52,7 +52,19 @@ npm start
 ```bash
 cd backend
 pip install -r requirements.txt
-python main.py
+
+# Run the chatbot API server (required for frontend)
+uvicorn api:app --reload
+
+# Or alternatively:
+python api.py
+```
+
+The backend will run on `http://localhost:8000`
+
+**Note:** If port 8000 is already in use by another application, specify a different port:
+```bash
+uvicorn api:app --host 0.0.0.0 --port 8001 --reload
 ```
 
 ### Environment Variables
@@ -97,8 +109,6 @@ The project is structured to allow easy extension and customization:
 
 
 ## 👥 Author
-Syed Farhan Iqbal
+Syed Farhan Iqbal (Owner)
 
----
 
-Made with ❤️ during the Hackathon" 
