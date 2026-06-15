@@ -409,6 +409,5 @@ Applied AI Engineer | RAG Systems | LLM Applications
 
 ---
 
-**Built with ❤️**
 
 
