@@ -39,35 +39,28 @@ Deployed as a microservices architecture: Frontend on Vercel, Backend on Hugging
 ## ✨ Key Features
 
 ### 🧠 Intelligent Query Classification
-The system preprocesses queries to detect intent before expensive retrieval operations:
-- **Greeting Detection**: Pattern matching for conversational openings
-- **Off-Topic Routing**: Redirects non-book queries without vector search
-- **Cost Optimization**: Saves ~80% API costs on non-retrieval queries
-- **Sub-second Response**: Direct responses bypass embedding + vector search pipeline
+Pre-processing layer analyzes query intent to optimize response paths:
+- **Conversational Routing**: Handles greetings and common interactions without retrieval
+- **Topic Boundary Detection**: Identifies out-of-scope queries and redirects appropriately  
+- **Cost Optimization**: Reduces unnecessary API calls by ~80%
+- **Response Time**: Sub-second latency for non-retrieval queries
 
 ### 🔍 Advanced RAG Pipeline
-Multi-stage retrieval with adaptive strategies:
+Multi-stage retrieval architecture with adaptive optimization:
 
-1. **Embedding Generation** (Cohere)
-   - Model: `embed-multilingual-v3.0`
-   - Dimension: 1024
-   - Input type optimization: `search_query` vs `search_document`
+**Embedding Layer** (Cohere multilingual-v3.0)
+- 1024-dimensional semantic vectors
+- Query-optimized encoding
 
-2. **Vector Search** (Qdrant)
-   - Similarity: Cosine distance
-   - Top-K retrieval: Default 5, adaptive up to 10
-   - Relevance threshold: 0.3 (triggers broader search)
+**Vector Search** (Qdrant)
+- Cosine similarity ranking
+- Dynamic top-k retrieval (5-10 results)
+- Adaptive expansion on low-confidence matches
 
-3. **Validation Layer**
-   - Keyword matching + semantic score fusion
-   - Low relevance auto-retry with 2x top-k
-   - Confidence scoring for frontend UX
-
-4. **Response Generation** (Groq/Llama 3.3 70B)
-   - System prompt enforces context grounding
-   - Temperature: 0.7 for balanced creativity
-   - Max tokens: 500 (optimized for concise answers)
-   - 3 retry attempts with exponential backoff
+**Validation & Generation** (Groq/Llama 3.3 70B)
+- Context relevance scoring
+- Automatic retry with exponential backoff
+- Temperature-controlled generation (0.7)
 
 ### 🛡️ Hallucination Prevention
 - **Strict context windowing**: Only retrieved chunks in prompt
@@ -221,96 +214,40 @@ Frontend runs at `http://localhost:3000`
 
 #### Backend (Hugging Face Spaces)
 
-1. **Create Dockerfile:**
-```dockerfile
-FROM python:3.11-slim
-
-WORKDIR /app
-
-COPY requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
-
-COPY agent.py .
-COPY api.py .
-COPY models/ ./models/
-
-EXPOSE 7860
-
-CMD ["uvicorn", "api:app", "--host", "0.0.0.0", "--port", "7860"]
-```
-
-2. **Create `.dockerignore`:**
-```
-__pycache__/
-*.pyc
-.env
-*.log
-.git/
-tests/
-```
-
-3. **Deploy to HF Spaces:**
-   - Create new Space (Docker SDK)
-   - Push code via Git
-   - Set environment variables in Settings → Repository secrets
-   - Space auto-builds and deploys
-
-4. **Environment Variables (HF Settings):**
-   - `GROQ_API_KEY`
-   - `GROQ_BASE_URL`
-   - `GROQ_MODEL`
-   - `QDRANT_URL`
-   - `QDRANT_API_KEY`
-   - `COHERE_API_KEY`
+Deploy using Docker containerization:
+- **Runtime**: Python 3.11-slim base image
+- **Port**: 7860 (HF Spaces standard)
+- **Environment**: Set API keys in Space settings (Secrets)
+- **Deployment**: Auto-build on git push
 
 #### Frontend (Vercel)
 
-1. **Update Backend URL:**
-```javascript
-// book_frontend/src/components/Chatbot/Chatbot.jsx
-const data = await fetchWithRetry('https://your-space.hf.space/chat', {
-  // ...
-});
-```
-
-2. **Deploy to Vercel:**
-```bash
-npm install -g vercel
-cd book_frontend
-vercel --prod
-```
-
-Or connect GitHub repo to Vercel for auto-deployments.
+Static deployment with edge optimization:
+- **Build**: Docusaurus production bundle
+- **CDN**: Global edge network
+- **API Integration**: Backend URL configured in component
+- **Deployment**: GitHub integration for CI/CD
 
 ## 📖 Usage
 
 ### Chat Interface
 
-The embedded chatbot supports three query types:
+The embedded chatbot provides three interaction modes:
 
-1. **Book Content Queries**
-```
-User: "What is digital twin simulation?"
-Bot: [Retrieves from Qdrant → Generates from context]
-Response: Detailed answer with 3-5 source URLs
-Time: ~3-5 seconds (embedding + search + generation)
-```
+**Book Content Queries**: Semantic search with RAG pipeline (~3-5s latency)
+- Retrieves relevant context from vector store
+- Generates grounded responses with source attribution
+- Returns confidence scores and book URLs
 
-2. **Greetings/Conversational**
-```
-User: "Hi!" or "Hello"
-Bot: [Direct response, no retrieval]
-Response: Welcome message with capabilities
-Time: <1 second
-```
+**Conversational Interactions**: Direct responses (<1s latency)
+- Pattern-based intent recognition
+- Skips retrieval for efficiency
+- Maintains natural user experience
 
-3. **Off-Topic Queries**
-```
-User: "Suggest a YouTube video"
-Bot: [Direct response, redirects to book topics]
-Response: Guides user to relevant book content
-Time: <1 second
-```
+**Off-Topic Handling**: Intelligent redirection
+- Detects out-of-scope queries
+- Guides users to relevant book topics
+- Prevents wasted compute resources
 
 ### API Endpoints
 
@@ -362,100 +299,93 @@ Health check endpoint.
 
 ## 📊 Performance Metrics
 
-### Response Times (P95)
-- **Greeting queries**: <500ms
-- **Off-topic queries**: <500ms
-- **Book queries (RAG)**: 3-5s
-  - Embedding: 100-200ms
-  - Vector search: 50-100ms
-  - LLM generation: 2-4s
+### Latency Profile (P95)
+- **Conversational queries**: <500ms
+- **RAG retrieval pipeline**: 3-5s
+- **Embedding generation**: 100-200ms
+- **Vector search**: 50-100ms
+- **LLM inference**: 2-4s
 
-### Cost Optimization
-- **Query classification**: Saves 80% on non-retrieval queries
-- **Adaptive retrieval**: Only expands search when needed
-- **Groq pricing**: ~$0.0001/query (vs OpenAI $0.001/query)
-
-### Accuracy
+### System Efficiency
+- **Cost optimization**: 80% reduction via query classification
+- **API pricing**: ~10x cost savings vs traditional providers
 - **Hallucination rate**: <2% (strict context grounding)
-- **Source attribution**: 100% (all responses include URLs)
-- **Relevance score**: Avg 0.85+ for book queries
+- **Source attribution**: 100% coverage on book queries
 
-## 🔧 Advanced Configuration
+## 🔧 Technical Configuration
 
-### Tuning RAG Parameters
+### RAG Pipeline Parameters
 
-**`agent.py` - Key Constants:**
-```python
-# Retrieval
-top_k = 5              # Initial retrieval count
-top_k_expansion = 10   # Retry with broader search
-relevance_threshold = 0.3  # Triggers adaptive retrieval
+**Retrieval Settings**:
+- Initial top-k: 5 results
+- Adaptive expansion: up to 10 results
+- Relevance threshold: 0.3 (triggers retry)
 
-# Generation
-temperature = 0.7      # Balance creativity vs accuracy
-max_tokens = 500       # Response length limit
-retry_attempts = 3     # API resilience
+**Generation Settings**:
+- Temperature: 0.7 (balanced creativity)
+- Max tokens: 500
+- Retry strategy: 3 attempts with exponential backoff
 
-# Classification
-greeting_patterns = ["hi", "hello", "hey", ...]
-off_topic_keywords = ["youtube", "video", "movie", ...]
-```
+**Classification Rules**:
+- Intent detection via pattern matching
+- Domain-specific keyword filtering
+- Configurable routing logic
 
-### Custom Query Classification
+## 🎯 Key Technical Decisions
 
-Add domain-specific patterns:
-```python
-# In classify_query_intent()
-robotics_keywords = ["ros", "robot", "humanoid", "isaac", "gazebo"]
-if any(kw in query_lower for kw in robotics_keywords):
-    return (False, "book_query")  # Force RAG pipeline
-```
+### Architecture Rationale
 
-## 🎯 Technical Highlights
+**Microservices Separation**
+- Decoupled deployment lifecycle
+- Independent horizontal scaling
+- Technology-agnostic integration
+- Cost-optimized compute allocation
 
-### Why This Architecture Works
+**Query Classification Layer**
+- Pre-filtering reduces unnecessary compute
+- Pattern-based intent detection
+- Significant cost reduction at scale
+- Improved user experience
 
-1. **Microservices Separation**
-   - Frontend: Static assets on CDN (Vercel Edge)
-   - Backend: Compute-heavy on demand (HF Spaces)
-   - Result: 99.9% uptime, global low-latency
+**Adaptive Retrieval Strategy**
+- Dynamic top-k adjustment based on confidence
+- Prevents empty result scenarios
+- Balances precision vs. context window size
+- Automated quality assurance
 
-2. **Query Classification**
-   - 80% of queries are greetings/off-topic
-   - Skipping retrieval saves $0.0001 × 80% = massive cost reduction
-   - Sub-second responses improve UX
+**API Resilience**
+- Exponential backoff retry mechanism
+- Graceful degradation on failures
+- High availability guarantees
+- Production-grade error handling
 
-3. **Adaptive Retrieval**
-   - Initial top-k=5 balances precision vs context size
-   - Low relevance auto-expands to top-k=10
-   - Prevents "no results" for edge cases
-
-4. **Retry Logic**
-   - Groq API occasional rate limits
-   - 3 attempts with exponential backoff (1s, 2s, 4s)
-   - 99.5% success rate vs 95% without retries
-
-5. **Source Attribution**
-   - Every response includes book URLs
-   - Users verify claims directly
-   - Builds trust in AI-generated content
+**Source Attribution**
+- Verifiable response grounding
+- User trust through transparency
+- Hallucination detection mechanism
+- Compliance with AI safety best practices
 
 ## 🤝 Contributing
 
-Contributions are welcome! Areas for improvement:
+Contributions welcome. Priority areas:
 
-- **Conversational Memory**: Track multi-turn context
-- **Hybrid Search**: Combine vector + keyword (BM25)
-- **Streaming Responses**: SSE for progressive generation
-- **Multilingual**: Leverage Cohere multilingual embeddings
-- **Analytics**: Track query patterns, response quality
+**Feature Enhancements**
+- Multi-turn conversational context
+- Hybrid search (vector + keyword)
+- Streaming response generation
+- Multilingual interface support
 
-**Development Workflow:**
-1. Fork the repository
-2. Create feature branch (`git checkout -b feature/amazing-feature`)
-3. Make changes with tests
-4. Commit with conventional commits (`feat:`, `fix:`, `docs:`)
-5. Push and open Pull Request
+**Infrastructure**
+- Query analytics and monitoring
+- A/B testing framework
+- Performance profiling tools
+- Automated quality metrics
+
+**Development Process**
+1. Fork repository
+2. Create feature branch
+3. Implement with tests
+4. Submit pull request with clear description
 
 ## 📄 License
 
