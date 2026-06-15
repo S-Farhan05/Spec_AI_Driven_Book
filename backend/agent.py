@@ -27,7 +27,6 @@ from functools import wraps
 from decouple import config
 
 # Import OpenAI Agents SDK
-from agents import Agent, Runner, function_tool ,OpenAIChatCompletionsModel
 from openai import AsyncOpenAI
 import cohere
 
@@ -42,11 +41,10 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-Key=config("OPEN_ROUTER_API_KEY")
-base_url= config("OPEN_ROUTER_BASE_URL")
+Key=config("GROQ_API_KEY")
+base_url= config("GROQ_BASE_URL")
+model_name = config("GROQ_MODEL")
 Client =AsyncOpenAI(api_key=Key,base_url=base_url)
-Third_party_Model = OpenAIChatCompletionsModel(model="mistralai/devstral-2512:free",openai_client=Client)
-
 
 
 class Config:
@@ -147,9 +145,6 @@ def setup_logging():
     logger.info("Logging configured successfully")
 
 
-from agents import function_tool
-
-@function_tool
 def retrieve_content_from_qdrant(query: str, top_k: int = 5) -> List[RetrievedChunk]:
     """
     Retrieve relevant content from Qdrant based on the query
@@ -219,7 +214,6 @@ def retrieve_content_from_qdrant(query: str, top_k: int = 5) -> List[RetrievedCh
         return []
 
 
-@function_tool
 def validate_content_relevance(query: str, retrieved_chunks: List[RetrievedChunk], expected_keywords: List[str]) -> float:
     """
     Validate the relevance of retrieved content to the query
@@ -260,7 +254,6 @@ def validate_content_relevance(query: str, retrieved_chunks: List[RetrievedChunk
         return 0.0
 
 
-@function_tool
 def generate_response_with_context(query: str, retrieved_chunks: List[RetrievedChunk]) -> str:
     """
     Generate a response based on the query and retrieved context
@@ -337,18 +330,67 @@ def validate_url(url: str) -> bool:
     return url_pattern.match(url) is not None
 
 
-# Create the main RAG Agent
-rag_agent = Agent(
-    name="Humanoid Robotics Book Assistant",
-    instructions="You are an assistant that answers questions based on content from the humanoid robotics book. Use the provided information to generate accurate responses. Do not mention technical terms like 'chunks', 'retrieval', 'database', 'tools', 'validation', 'relevance', etc. Keep responses natural and user-friendly. Focus on providing helpful answers about humanoid robotics topics.",
-    tools=[retrieve_content_from_qdrant, validate_content_relevance, generate_response_with_context],
-    model=Third_party_Model,
-)
+def classify_query_intent(query: str) -> tuple[bool, str]:
+    """
+    Classify if query is a greeting or off-topic (no retrieval needed)
+    Returns: (is_direct_response, category)
+    """
+    query_lower = query.lower().strip()
+
+    # Greeting patterns
+    greetings = ["hi", "hello", "hey", "good morning", "good afternoon", "good evening",
+                 "greetings", "hola", "howdy", "what's up", "whats up", "sup"]
+
+    # Gratitude/Farewell patterns
+    thanks_bye = ["thanks", "thank you", "appreciate", "bye", "goodbye", "see you",
+                  "later", "exit", "quit"]
+
+    # Off-topic patterns
+    off_topic = ["youtube", "video", "movie", "weather", "news", "song", "music",
+                 "game", "recipe", "joke", "story", "meme"]
+
+    # Check greetings
+    if any(greeting in query_lower for greeting in greetings):
+        return (True, "greeting")
+
+    # Check thanks/farewell
+    if any(word in query_lower for word in thanks_bye):
+        return (True, "thanks_bye")
+
+    # Check off-topic
+    if any(topic in query_lower for topic in off_topic):
+        return (True, "off_topic")
+
+    # If query is very short (1-3 words) and doesn't seem book-related
+    words = query_lower.split()
+    if len(words) <= 3 and not any(keyword in query_lower for keyword in
+        ["ros", "robot", "humanoid", "isaac", "gazebo", "navigation", "digital twin",
+         "vla", "simulation", "sensor", "lidar", "actuator"]):
+        return (True, "unclear")
+
+    return (False, "book_query")
+
+
+def generate_direct_response(query: str, category: str) -> str:
+    """
+    Generate direct response for non-book queries without retrieval
+    """
+    responses = {
+        "greeting": "Hello! 👋 I'm your Humanoid Robotics textbook assistant. I can help you learn about ROS 2, Isaac Sim, Gazebo, navigation systems, VLA models, and everything related to physical AI and humanoid robotics. What would you like to know?",
+
+        "thanks_bye": "You're welcome! If you have more questions about humanoid robotics, ROS 2, or any topics from the book, feel free to ask anytime. Happy learning! 🤖",
+
+        "off_topic": "I'm specialized in answering questions about the Humanoid Robotics textbook content. I can help you with topics like:\n• ROS 2 and robot control systems\n• Isaac Sim and Gazebo simulation\n• Navigation and path planning\n• VLA (Vision-Language-Action) models\n• Digital twins and sensor systems\n\nWhat would you like to learn about?",
+
+        "unclear": "I'm here to help you with the Humanoid Robotics textbook! Could you please ask a more specific question about topics like ROS 2, robot simulation, navigation, or humanoid robotics concepts?"
+    }
+
+    return responses.get(category, responses["unclear"])
 
 
 def query_agent(user_query: str, top_k: int = 5, expected_keywords: List[str] = None) -> QueryResult:
     """
-    Main function to query the RAG agent
+    Enhanced RAG agent with multi-step reasoning and retry logic
     """
     if expected_keywords is None:
         expected_keywords = []
@@ -356,40 +398,95 @@ def query_agent(user_query: str, top_k: int = 5, expected_keywords: List[str] = 
     start_time = time.time()
 
     try:
-        # Use the OpenAI Agent SDK to run the agent with the query
-        result = Runner.run_sync(
-            rag_agent,
-            f"Retrieve and analyze information about: {user_query}",
-            context={
-                "top_k": top_k,
-                "expected_keywords": expected_keywords
-            }
-        )
+        # Step 0: Classify query intent - skip retrieval for greetings/off-topic
+        is_direct, category = classify_query_intent(user_query)
 
-        # Process the result to create a QueryResult object
-        # This is a simplified version - in practice, you'd parse the agent's structured response
-        retrieved_chunks = []  # Would be extracted from agent response
-        agent_response = result.final_output
-        confidence_score = 0.8  # Placeholder - would come from validation
+        if is_direct:
+            logger.info(f"Direct response for category: {category}, skipping retrieval")
+            direct_response = generate_direct_response(user_query, category)
+
+            query_result = QueryResult(
+                query_id=f"query_{int(time.time())}_{hashlib.md5(user_query.encode()).hexdigest()[:8]}",
+                original_query=user_query,
+                retrieved_chunks=[],
+                agent_response=direct_response,
+                confidence_score=1.0,  # High confidence for direct responses
+                query_time_ms=(time.time() - start_time) * 1000,
+                retrieval_timestamp=datetime.now(),
+                total_chunks_found=0,
+                semantic_relevance_score=0.0
+            )
+            return query_result
+        # Step 1: Retrieve content from Qdrant with retry logic
+        retrieved_chunks = retrieve_content_from_qdrant(user_query, top_k)
+
+        # Step 2: Validate content relevance
+        if retrieved_chunks:
+            validation_score = validate_content_relevance(user_query, retrieved_chunks, expected_keywords)
+
+            # If relevance is too low, try broader search
+            if validation_score < 0.3 and top_k < 10:
+                logger.info(f"Low relevance score ({validation_score:.2f}), attempting broader search")
+                retrieved_chunks = retrieve_content_from_qdrant(user_query, top_k * 2)
+                validation_score = validate_content_relevance(user_query, retrieved_chunks, expected_keywords)
+        else:
+            validation_score = 0.0
+
+        # Step 3: Calculate confidence based on relevance scores
+        avg_relevance = sum(chunk.relevance_score for chunk in retrieved_chunks) / len(retrieved_chunks) if retrieved_chunks else 0.0
+
+        # Step 4: Generate response using Groq with retry logic
+        agent_response = None
+        max_retries = 3
+
+        if retrieved_chunks and avg_relevance > 0.2:
+            context_str = "\n\n".join([
+                f"Module: {chunk.module}\nSection: {chunk.section}\nContent: {chunk.content}"
+                for chunk in retrieved_chunks[:3]
+            ])
+
+            system_prompt = "You are a helpful assistant that answers questions based only on the provided content from the humanoid robotics book. Provide clear, informative answers. If the information is not in the context, say so."
+
+            # Retry loop for Groq API
+            for attempt in range(max_retries):
+                try:
+                    groq_response = asyncio.run(Client.chat.completions.create(
+                        model=model_name,
+                        messages=[
+                            {"role": "system", "content": system_prompt},
+                            {"role": "user", "content": f"Context:\n{context_str}\n\nQuestion: {user_query}\n\nAnswer:"}
+                        ],
+                        temperature=0.7,
+                        max_tokens=500
+                    ))
+                    agent_response = groq_response.choices[0].message.content
+                    break  # Success, exit retry loop
+                except Exception as e:
+                    logger.warning(f"Groq API attempt {attempt + 1} failed: {str(e)}")
+                    if attempt == max_retries - 1:
+                        raise  # Re-raise on final attempt
+                    time.sleep(1)  # Wait before retry
+
+        if not agent_response:
+            agent_response = "I couldn't find relevant information in the humanoid robotics book to answer your question."
 
         query_result = QueryResult(
             query_id=f"query_{int(time.time())}_{hashlib.md5(user_query.encode()).hexdigest()[:8]}",
             original_query=user_query,
-            retrieved_chunks=[],  # Would populate from agent response
+            retrieved_chunks=retrieved_chunks,
             agent_response=agent_response,
-            confidence_score=confidence_score,
+            confidence_score=avg_relevance,
             query_time_ms=(time.time() - start_time) * 1000,
             retrieval_timestamp=datetime.now(),
             total_chunks_found=len(retrieved_chunks),
-            semantic_relevance_score=confidence_score
+            semantic_relevance_score=avg_relevance
         )
 
-        logger.info(f"Query processed in {(time.time() - start_time)*1000:.2f}ms")
+        logger.info(f"Query processed in {(time.time() - start_time)*1000:.2f}ms with {len(retrieved_chunks)} chunks")
         return query_result
 
     except Exception as e:
         logger.error(f"Error querying RAG agent: {str(e)}")
-        # Return an empty result in case of error
         query_result = QueryResult(
             query_id=f"error_{int(time.time())}",
             original_query=user_query,
